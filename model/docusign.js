@@ -14,3 +14,5 @@ var authorize_Token = async () => {
 
     return bodytosend;
 }
+
+exports.authorize_Token = authorize_Token;
