@@ -77,7 +77,7 @@ var handlererror = (error) => {
 
 //Base API URL
 var base_api_url = function(value) {
-	if (!base_api_url.instance || (typeof value === 'string' && value.length > 0)) {
+	if (!base_api_url.instance || (typeof value === 'string' && value.trim().length > 0)) {
 		base_api_url.instance = value;
 	}
 
@@ -93,7 +93,7 @@ var base_headers = function(value) {
 	return base_headers.instance;
 }
 
-var Get = async function(suburl) {
+var Get = async function(suburl, format) {
 	console.log("Get", base_api_url.instance + suburl);
 	console.log("Headers", base_headers.instance);
 
@@ -102,7 +102,12 @@ var Get = async function(suburl) {
 		headers: base_headers.instance
 	});
 
-	return await res.json();
+	if(!format || format === 'json')
+	{	
+		return await res.json();
+	} else {
+		return res;
+	}
 };
 
 var Post = async function(suburl, body) {

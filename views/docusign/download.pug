@@ -19,8 +19,19 @@ block content
                 th #{envelope.recipientsUri }
                 th #{envelope.attachmentsUri }
                 th #{envelope.envelopeUri }
+    
+    table(style="width:100%" id="tb_envelopes")
+        tr
+            th DocumentId
+            th Name
+            th uri
+        
+        each document in documents
+            tr 
+                th #{document.documentId }
+                th #{document.name }
+                th 
+                    - var redirectdoc_url = 'document?access_token=' + access_token + 'subpath=' + encodeURIComponent(document.uri);
+                    a(href=redirectdoc_url) Download 
             
-//- block scripts
-//-     script(src="/javascripts/tableloader.js")
-//-     script(type="text/javascript")
-//-         dsfilltable()
+        

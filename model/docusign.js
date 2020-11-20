@@ -3,6 +3,7 @@
 
 const requester = require('./requester');
 const moment = require('moment');
+const { json } = require('express');
 
 const account_id = '36da5cd1-fa11-4354-b9db-eeb1cc682914';
 const secret_key = '9ebdcd12-18b7-4927-a85f-1cd3e92d269a';
@@ -13,6 +14,25 @@ const base_path = 'https://demo.docusign.net/';
 const base_auth_url = 'https://account-d.docusign.com/oauth/';
 const response_type = 'code';
 const grant_type = 'authorization_code';
+let jsonHeaders = {
+    'Content-Type': "application/json",
+    Authorization: ''
+}
+let account_path = `accounts/${account_id}`;
+// let envelope_path = (value) => {
+//     if(!envelope_path.instance || (typeof value === 'string' && value.trim().length > 0)) {
+//         envelope_path.instance = `envelopes/${value}`;
+//     }
+
+//     return envelope_path.instance;
+// }
+// let document_path = (value) => {
+//     if(!document_path.instance || (typeof value === 'string' && value.trim().length > 0)) {
+//         document_path.instance = `documents/${value}`;
+//     }
+
+//     return document_path.instance;
+// }
 
 var get_Consent = () => {
     requester.base_api_url(base_auth_url);
@@ -52,6 +72,7 @@ var authorize_Token = async (code) => {
     
     exports.token_expiration = moment().add(response.expires_in, "m");
     exports.refresh_token = response.refresh_token;
+    jsonHeaders.Authorization = 'Bearer ' + response.access_token;
     //return response as json
     return response; 
 }
@@ -71,31 +92,17 @@ var check_Token = (token) => {
     return (!needToken);
 }
 
-var worker = async(args) => { 
-    requester.base_api_url(base_path);   
-    requester.base_headers({
-        'Content-Type': "application/json",
-        Authorization: 'Bearer ' + args.accessToken
-    });
-
-    let options = {fromDate: moment().subtract(30, 'days').format()};
-
-    let results = await requester.Get(`restapi/v2/accounts/${account_id}/envelopes?from_date=2016-01-01`);
-
-    console.log("results", results);
-
-    return results;
-}
-
-var listEnvelopes = async (token) => {
-    var isvalidToken = check_Token(token);
+var listEnvelopes = async (accessToken) => {
+    var isvalidToken = check_Token(accessToken);
 
     if(isvalidToken){
-        let files = await worker({
-            accessToken: token, 
-            basePath: base_path,
-            accountId: account_id
-        });
+        requester.base_api_url(base_path);   
+        requester.base_headers(jsonHeaders);
+
+        let fromDate = '2016-01-01';
+        let files =  await requester.Get(`restapi/v2/${account_path}/envelopes?from_date=${fromDate}`);
+
+        console.log("results", files);
         
         return files;
     } else {
@@ -104,6 +111,79 @@ var listEnvelopes = async (token) => {
 
 }
 
+var listEnvelopeDocuments = async (accessToken, subpath) => {
+    var isvalidToken = check_Token(accessToken);
+
+    if(isvalidToken){
+        requester.base_api_url(base_path);
+        requester.base_headers(jsonHeaders);
+
+        let documents = await requester.Get(`restapi/v2/${account_path}/${subpath}`);
+
+        return documents;
+    } else {
+        return null;
+    }
+}
+
+var getEnvelopeDocument = async (accessToken, subpath) => {
+    var isvalidToken = check_Token(accessToken);
+
+    if(isvalidToken){
+        requester.base_api_url(base_path);
+        documentHeaders = jsonHeaders;
+        documentHeaders.Accept = "application/pdf";
+        requester.base_headers(documentHeaders);
+
+        let document = await requester.Get(`restapi/v2/${account_path}/${subpath}`, 'pdf');
+
+        return document;
+    } else {
+        return null;
+    }
+}
+
+var combinedEnvelopeDocuments = async(args) => {
+    // let dsApiClient = new docusign.ApiClient();
+    // dsApiClient.setBasePath(base_path);
+    // dsApiClient.addDefaultHeader('Authorization', 'Bearer ' + args.accessToken);
+    // let envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+
+    // EnvelopeDocuments::get.
+    // Exceptions will be caught by the calling function
+    let results = await getEnvelopeDocument(args.accessToken, args.subpath);
+
+    let docItem = results.find(item => item.documentId === args.documentId);
+    let docName = docItem.name;
+    let hasPDFsuffix = docName.substr(docName.length - 4).toUpperCase() === '.PDF';
+    let pdfFile = hasPDFsuffix;
+    // Add .pdf if it's a content or summary doc and doesn't already end in .pdf
+    if ((docItem.type === "content" || docItem.type === "summary") && !hasPDFsuffix){
+        docName += ".pdf";
+        pdfFile = true;
+    }
+    // Add .zip as appropriate
+    if (docItem.type === "zip") {
+        docName += ".zip"
+    }
+
+    // Return the file information
+    // See https://stackoverflow.com/a/30625085/64904
+    let mimetype;
+    if (pdfFile) {
+        mimetype = 'application/pdf'
+    } else if (docItem.type === 'zip') {
+        mimetype = 'application/zip'
+    } else {
+        mimetype = 'application/octet-stream'
+    }
+
+    return ({mimetype: mimetype, docName: docName, fileBytes: results});
+}
+
 exports.get_Consent = get_Consent;
 exports.authorize_Token = authorize_Token;
 exports.listEnvelopes = listEnvelopes;
+exports.listEnvelopeDocuments = listEnvelopeDocuments;
+exports.combinedEnvelopeDocuments = combinedEnvelopeDocuments;
+exports.getEnvelopeDocument = getEnvelopeDocument;
