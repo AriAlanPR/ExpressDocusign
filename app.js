@@ -12,7 +12,16 @@ var sharepointRouter = require('./routes/sharepoint');
 var app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
+const view_directories = [
+  path.join(__dirname, 'views'),
+  path.join(__dirname, 'views/docusign'),
+  path.join(__dirname, 'views/sharepoint')
+];
+
+//added base directory for views
+app.locals.basedir = view_directories[0];
+//set view directories to expose to routes
+app.set('views', view_directories);
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));

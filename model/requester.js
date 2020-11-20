@@ -22,7 +22,7 @@ const post = async function(opts) {
 		method: "POST", // *GET, POST, PUT, DELETE, etc.
 		//   mode: 'cors', // no-cors, *cors, same-origin
 		//   cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-		credentials: "same-origin", // include, *same-origin, omit
+		// credentials: "same-origin", // include, *same-origin, omit
 		headers: headers,
 		//   redirect: 'follow', // manual, *follow, error
 		//   referrerPolicy: 'no-referrer', // no-referrer, *client
@@ -41,7 +41,7 @@ const put = async function(opts) {
 		method: "PUT", // *GET, POST, PUT, DELETE, etc.
 		//   mode: 'cors', // no-cors, *cors, same-origin
 		//   cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-		credentials: "same-origin", // include, *same-origin, omit
+		// credentials: "same-origin", // include, *same-origin, omit
 		headers: headers,
 		//   redirect: 'follow', // manual, *follow, error
 		//   referrerPolicy: 'no-referrer', // no-referrer, *client
@@ -60,7 +60,7 @@ const _delete = async function(opts) {
 		  method: "DELETE", // *GET, POST, PUT, DELETE, etc.
 		  //   mode: 'cors', // no-cors, *cors, same-origin
 		  //   cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-		  credentials: "same-origin", // include, *same-origin, omit
+		//   credentials: "same-origin", // include, *same-origin, omit
 		  headers: headers,
 		  //   redirect: 'follow', // manual, *follow, error
 		  //   referrerPolicy: 'no-referrer', // no-referrer, *client
@@ -77,71 +77,67 @@ var handlererror = (error) => {
 
 //Base API URL
 var base_api_url = function(value) {
-	if (base_api_url.instance) {
-		return base_api_url.instance;
+	if (!base_api_url.instance || (typeof value === 'string' && value.length > 0)) {
+		base_api_url.instance = value;
 	}
 
-	var api_url = value;
-	base_api_url.instance = api_url;
-
-	return api_url;
+	return base_api_url.instance;
 }
 
 //Base headers
 var base_headers = function(value) {
-	if (base_headers.instance) {
-		return base_headers.instance;
+	if(!base_headers.instance || value.hasOwnProperty('Content-Type')){
+		base_headers.instance = value;
 	}
 
-	var props = value;
-	base_headers.instance = props;
-
-	return props;
+	return base_headers.instance;
 }
 
 var Get = async function(suburl) {
-	logger("Get", base_api_url("") + suburl);
+	console.log("Get", base_api_url.instance + suburl);
+	console.log("Headers", base_headers.instance);
+
 	var res = await get({
-		url: base_api_url("") + suburl,
-		headers: base_headers({})
+		url: base_api_url.instance + suburl,
+		headers: base_headers.instance
 	});
 
 	return await res.json();
 };
 
 var Post = async function(suburl, body) {
-	logger("Base api url", JSON.stringify(base_api_url("")));
-	logger("Post to", base_api_url("") + suburl);
-	logger("Headers", JSON.stringify(base_headers({}), null, 4));
-	logger("Body", "Content of body: " + JSON.stringify(body));
+	console.log("Base api url", JSON.stringify(base_api_url.instance));
+	console.log("Post to", base_api_url.instance + suburl);
+	console.log("Headers", JSON.stringify(base_headers.instance, null, 4));
+	console.log("Body", "Content of body: " + JSON.stringify(body));
 	var res =  await post({
-		url: base_api_url("") + suburl,
+		url: base_api_url.instance + suburl,
 		body: body,
-		headers: base_headers({})
+		headers: base_headers.instance
 	});
 
 	return await res.json();
 };
 
 var Put = async function(suburl, body) {
-	logger("Put", base_api_url("") + suburl);
-	logger("Headers", JSON.stringify(base_headers({}), null, 4));
+	console.log("Put", base_api_url.instance + suburl);
+	console.log("Headers", JSON.stringify(base_headers.instance, null, 4));
 	var res = await put({
-		url: base_api_url("") + suburl,
+		url: base_api_url.instance + suburl,
 		body: body,
-		headers: base_headers({})
+		headers: base_headers.instance
 	});
 
 	return await res.json();
 };
 
 var _Delete = async function(suburl, body) {
-	logger("Delete", base_api_url("") + suburl);
-	logger("Headers", JSON.stringify(base_headers({}), null, 4));
+	console.log("Delete", base_api_url.instance + suburl);
+	console.log("Headers", JSON.stringify(base_headers.instance, null, 4));
 	var res = await _delete({
-		url: base_api_url("") + suburl,
+		url: base_api_url.instance + suburl,
 		body: body,
-		headers: base_headers({})
+		headers: base_headers.instance
 	});
 
 	return await res.json();

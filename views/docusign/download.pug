@@ -1,0 +1,26 @@
+extends /layout
+
+block content
+    h1 Docusign download file: 
+    p
+
+    table(style="width:100%" id="tb_envelopes")
+        tr
+            th Status
+            th Documents
+            th Recipients
+            th Attachments
+            th Envelopes
+        
+        each envelope in files
+            tr 
+                th #{envelope.status }
+                th #{envelope.documentsUri }
+                th #{envelope.recipientsUri }
+                th #{envelope.attachmentsUri }
+                th #{envelope.envelopeUri }
+            
+//- block scripts
+//-     script(src="/javascripts/tableloader.js")
+//-     script(type="text/javascript")
+//-         dsfilltable()
