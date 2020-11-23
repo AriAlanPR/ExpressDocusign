@@ -3,7 +3,7 @@
 
 const requester = require('./requester');
 const moment = require('moment');
-const { json } = require('express');
+const docusign = require('docusign-esign');
 
 const account_id = '36da5cd1-fa11-4354-b9db-eeb1cc682914';
 const secret_key = '9ebdcd12-18b7-4927-a85f-1cd3e92d269a';
@@ -19,6 +19,10 @@ let jsonHeaders = {
     Authorization: ''
 }
 let account_path = `accounts/${account_id}`;
+let dsApiClient = new docusign.ApiClient();
+dsApiClient.setBasePath(`${base_path}restapi`);
+
+
 // let envelope_path = (value) => {
 //     if(!envelope_path.instance || (typeof value === 'string' && value.trim().length > 0)) {
 //         envelope_path.instance = `envelopes/${value}`;
@@ -73,6 +77,7 @@ var authorize_Token = async (code) => {
     exports.token_expiration = moment().add(response.expires_in, "m");
     exports.refresh_token = response.refresh_token;
     jsonHeaders.Authorization = 'Bearer ' + response.access_token;
+    dsApiClient.addDefaultHeader('Authorization', jsonHeaders.Authorization);
     //return response as json
     return response; 
 }
@@ -126,18 +131,48 @@ var listEnvelopeDocuments = async (accessToken, subpath) => {
     }
 }
 
-var getEnvelopeDocument = async (accessToken, subpath) => {
+var hasPDFsuffix = (filename) => {
+    return filename.toUpperCase().includes('.PDF');
+}
+
+var getEnvelopeDocument = async (accessToken, envelopeId, docId, docName, type) => {
     var isvalidToken = check_Token(accessToken);
 
     if(isvalidToken){
-        requester.base_api_url(base_path);
-        documentHeaders = jsonHeaders;
-        documentHeaders.Accept = "application/pdf";
-        requester.base_headers(documentHeaders);
+        
+        let pdfFile = hasPDFsuffix(docName);
+        // Add .pdf if it's a content or summary doc and doesn't already end in .pdf
+        if ((type === "content" || type === "summary") && !pdfFile) {
+            docName += ".pdf";
+            pdfFile = true;
+        }
+        // Add .zip as appropriate
+        if (type === "zip") {
+            docName += ".zip"
+        }
+        
+        // Return the file information
+        // See https://stackoverflow.com/a/30625085/64904
+        let mimetype;
+        if (pdfFile) {
+            mimetype = 'application/pdf'
+        } else if (type === 'zip') {
+            mimetype = 'application/zip'
+        } else {
+            mimetype = 'application/octet-stream'
+        }
+        
+        let envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        let document = await envelopesApi.getDocument(account_id, envelopeId, docId, null).catch((reason) => {
+            console.log(reason);
+        });
+        
+        // let documentHeaders = jsonHeaders;
+        // documentHeaders.Accept = "application/pdf";
 
-        let document = await requester.Get(`restapi/v2/${account_path}/${subpath}`, 'pdf');
+        // let document = await requester.Get(`restapi/v2/${account_path}${subpath}`, 'pdf');
 
-        return document;
+        return ({mimetype: mimetype, docName: docName, fileBytes: document});
     } else {
         return null;
     }

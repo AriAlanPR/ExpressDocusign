@@ -20,6 +20,9 @@ block content
                 th #{envelope.attachmentsUri }
                 th #{envelope.envelopeUri }
     
+    p
+    p
+
     table(style="width:100%" id="tb_envelopes")
         tr
             th DocumentId
@@ -31,7 +34,7 @@ block content
                 th #{document.documentId }
                 th #{document.name }
                 th 
-                    - var redirectdoc_url = 'document?access_token=' + access_token + 'subpath=' + encodeURIComponent(document.uri);
+                    - var redirectdoc_url = `document?access_token=${access_token}&docId=${document.documentId}&docName=${document.name}.pdf&envelopeId=${document.envelopeId}&type=${document.type}&subpath=${encodeURIComponent(document.uri)}`;
                     a(href=redirectdoc_url) Download 
             
         

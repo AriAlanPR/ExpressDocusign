@@ -1,6 +1,7 @@
 var express = require('express');
 var docusign = require('./../model/docusign');
 var router = express.Router();
+// const fs = require('fs');
 
 /* GET index page. */
 router.get('/', function(req, res, next) {
@@ -28,8 +29,12 @@ router.get('/callback', async function(req, res) {
   // console.log(file_array);
 
   let documents_array = await docusign.listEnvelopeDocuments(token.access_token, file_array[0].documentsUri);
-  
-  if(file_array){
+  documents_array = documents_array.envelopeDocuments.map((doc) => {
+    doc.envelopeId = documents_array.envelopeId;
+    return doc;
+  });
+
+  if(file_array && documents_array){
     res.status(200).render('docusign/download', {
       files: file_array,
       documents: documents_array,
@@ -44,15 +49,22 @@ router.get('/document', async function(req, res) {
   console.log('entering document get');
   console.log('data', req.query);
 
-  if(req.access_token && req.subpath) {
-    let document = docusign.getEnvelopeDocument(req.access_token, req.subpath);
+  if(req.query.access_token && req.query.subpath) {
+    var opts = [req.query.access_token, req.query.envelopeId, req.query.docId, req.query.docName, req.query.type];
+    let document = await docusign.getEnvelopeDocument(...opts);
 
     console.log('completed document request');
     console.log('document', document);
 
-    res.status(200).render('docusign/document', {
-      document: document
+    res.writeHead(200, 'Ok', {
+      'Content-Type': document.mimetype,
+      'Content-disposition': 'inline;filename=' + document.docName,
+      'Content-Length': document.fileBytes.length
     });
+    res.end(document.fileBytes, 'binary');
+    // res.status(200).render('docusign/document', {
+    //   document: document
+    // });
   } else {
     res.status(500).json({ error: "failed to retrieve document uri"});
   } 

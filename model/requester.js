@@ -106,7 +106,7 @@ var Get = async function(suburl, format) {
 	{	
 		return await res.json();
 	} else {
-		return res;
+		return res.text();
 	}
 };
 
